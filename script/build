@@ -3,4 +3,11 @@ set -e
 
 readonly gitTag=$(git tag --sort=refname | tail -n 1)
 
-CGO_ENABLED=0 go build -ldflags "-X main.version=$gitTag -s -extldflags -static" -a -tags netgo -o bin/redis-dumper
+name="redis-dumper"
+
+if [ "$1" == "linux" ]; then
+  export GOOS=linux
+  name="${name}-linux"
+fi
+
+CGO_ENABLED=0 go build -ldflags "-X main.version=$gitTag -s -extldflags -static" -a -o bin/${name}
