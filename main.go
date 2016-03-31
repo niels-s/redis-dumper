@@ -12,18 +12,18 @@ import (
 )
 
 var (
+	version       string
 	redisDB       int64
 	redisAddr     string
 	documentation = `Redis Dumper
 
 This script dumps all the entries from one Redis DB into a file in the redis protocol format.
-See here (http://redis.io/topics/protocol) and here(http://redis.io/topics/mass-insert).
+See here (http://redis.io/topics/protocol) and here (http://redis.io/topics/mass-insert).
 This allows use to pipe the resulting file directly into redis with pipe command like this
 
 > cat redis_db_0_dump.rdb | redis-cli --pipe
 
 This script is especially created to get contents from AWS Elasticache but works with all Redis instances
-
 
 `
 )
@@ -35,6 +35,7 @@ func init() {
 		fmt.Fprintf(os.Stderr, documentation)
 		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
 		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\nCurrent Version: %s\n", version)
 	}
 }
 
