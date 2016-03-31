@@ -29,11 +29,11 @@ This script is especially created to get contents from AWS Elasticache but works
 )
 
 func init() {
-	flag.Int64Var(&redisDB, "Redis DB", 0, "Indicate which db to process")
-	flag.StringVar(&redisAddr, "Redis Address", "localhost:6379", "Redis address (url and port)")
+	flag.Int64Var(&redisDB, "db", 0, "Indicate which db to process")
+	flag.StringVar(&redisAddr, "address", "localhost:6379", "Redis address (url and port)")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, documentation)
-		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage of Redis Dumper:\n")
 		flag.PrintDefaults()
 		fmt.Fprintf(os.Stderr, "\nCurrent Version: %s\n", version)
 	}
@@ -88,7 +88,7 @@ func createRestoreCommand(key, dump string) string {
 }
 
 func createFile() (*os.File, *bufio.Writer) {
-	file, err := os.Create(fmt.Sprintf("redis_db_%s_dump.rdb", redisDB))
+	file, err := os.Create(fmt.Sprintf("redis_db_%d_dump.rdb", redisDB))
 	if err != nil {
 		log.Fatalf("Couldn't create file: %v", err)
 	}
