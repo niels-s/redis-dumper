@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"time"
 
 	"gopkg.in/redis.v3"
 )
@@ -27,6 +28,8 @@ This script is especially created to get contents from AWS Elasticache but works
 
 `
 )
+
+const restoreCommand = "*4\r\n$7\r\nRESTORE\r\n"
 
 func init() {
 	flag.Int64Var(&redisDB, "db", 0, "Indicate which db to process")
@@ -61,12 +64,7 @@ func main() {
 		}
 
 		for _, key := range keys {
-			dump, err := client.Dump(key).Result()
-			if err != nil {
-				log.Printf("ERROR: couldn't dump key %s: %v", key, err)
-				return
-			}
-			writer.WriteString(createRestoreCommand(key, dump))
+			processKey(client, writer, key)
 		}
 		writer.Flush()
 
@@ -78,13 +76,33 @@ func main() {
 	log.Println("End processing")
 }
 
-func createRestoreCommand(key, dump string) string {
-	proto := "*4\r\n$7\r\nRESTORE\r\n"
-	key_proto := "$" + strconv.Itoa(len(key)) + "\r\n" + key + "\r\n"
-	ttl_proto := "$1\r\n0\r\n"
-	dump_proto := "$" + strconv.Itoa(len(dump)) + "\r\n" + dump + "\r\n"
+func processKey(client *redis.Client, writer *bufio.Writer, key string) {
+	dump, err := client.Dump(key).Result()
+	if err != nil {
+		log.Printf("ERROR: couldn't dump key %s: %v", key, err)
+		return
+	}
 
-	return proto + key_proto + ttl_proto + dump_proto
+	ttl, err := client.TTL(key).Result()
+	if err != nil {
+		log.Printf("ERROR: couldn't dump key %s: %v", key, err)
+		return
+	}
+
+	writer.WriteString(createRestoreCommand(key, dump, &ttl))
+}
+
+func createRestoreCommand(key, dump string, ttl *time.Duration) string {
+	// TODO: need to check if seconds contains numbers after ,!!!
+	ttlString := strconv.Itoa(int(ttl.Seconds() * 1000))
+
+	result := restoreCommand
+
+	for _, val := range [3]string{key, ttlString, dump} {
+		result += "$" + strconv.Itoa(len(val)) + "\r\n" + val + "\r\n"
+	}
+
+	return result
 }
 
 func createFile() (*os.File, *bufio.Writer) {
