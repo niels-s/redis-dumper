@@ -93,8 +93,11 @@ func processKey(client *redis.Client, writer *bufio.Writer, key string) {
 }
 
 func createRestoreCommand(key, dump string, ttl *time.Duration) string {
-	// TODO: need to check if seconds contains numbers after ,!!!
-	ttlString := strconv.Itoa(int(ttl.Seconds() * 1000))
+	seconds := int(ttl.Seconds() * 1000)
+	if seconds < 0 {
+		seconds = 0
+	}
+	ttlString := strconv.Itoa(seconds)
 
 	result := restoreCommand
 
