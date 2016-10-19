@@ -14,8 +14,8 @@ import (
 
 var (
 	version       string
-	redisDB       int64
-	redisAddr     string
+	redisDB int64
+	redisHost, redisPort, redisPassword string
 	documentation = `Redis Dumper
 
 This script dumps all the entries from one Redis DB into a file in the redis protocol format.
@@ -32,8 +32,10 @@ This script is especially created to get contents from AWS Elasticache but works
 const restoreCommand = "*4\r\n$7\r\nRESTORE\r\n"
 
 func init() {
-	flag.Int64Var(&redisDB, "db", 0, "Indicate which db to process")
-	flag.StringVar(&redisAddr, "address", "localhost:6379", "Redis address (url and port)")
+	flag.Int64Var(&redisDB, "n", 0, "Database number")
+	flag.StringVar(&redisHost, "h", "127.0.0.1", "Server hostname")
+	flag.StringVar(&redisPort, "p", "6379", "Server port")
+	flag.StringVar(&redisPassword, "a", "", "Password to use when connecting to the server")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, documentation)
 		fmt.Fprintf(os.Stderr, "Usage of Redis Dumper:\n")
@@ -46,10 +48,16 @@ func main() {
 	flag.Parse()
 	log.Println("Start processing")
 
-	client := redis.NewClient(&redis.Options{
+	options := &redis.Options{
 		DB:   redisDB,
-		Addr: redisAddr,
-	})
+		Addr: fmt.Sprintf("%v:%v", redisHost, redisPort),
+	}
+
+	if len(redisPassword) != 0 {
+		options.Password = redisPassword
+	}
+
+	client := redis.NewClient(options)
 
 	file, writer := createFile()
 	defer file.Close()
